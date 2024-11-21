@@ -7,6 +7,7 @@ import {
 import { type Adapter } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
 
+import { env } from "~/env";
 import { signInSchema } from "~/schemas/auth";
 import { db } from "~/server/db";
 import bcrypt from "bcryptjs";
@@ -66,35 +67,38 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
-          const { email, password } =
-            await signInSchema.parseAsync(credentials);
-
+          const { email, password } = await signInSchema.parseAsync(credentials);
+      
           const user = await db.user.findUnique({
             where: {
               email: email,
             },
           });
-
+      
           if (!user) {
+            console.log("User not found");
             throw new Error("User not found.");
           }
-
+      
           const validPassword = await bcrypt.compare(password, user.password);
-
+      
           if (!validPassword) {
-            return null;
+            console.log("Invalid password");
+            return null;  // Returning null if password doesn't match
           }
-
+      
           return user;
         } catch (error) {
+          console.error("Authentication error:", error);
           if (error instanceof ZodError) {
-            return null;
+            console.error("Validation error:", error.errors);  // Log validation errors
           }
+          return null;  // Return null if there's any error
         }
-
-        return null;
-      },
-    }),
+      }
+      
+    }
+  ),
     /**
      * ...add more providers here.
      *
@@ -108,7 +112,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/signin",
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.AUTH_SECRET,
   session: {
     strategy: "jwt",
   },

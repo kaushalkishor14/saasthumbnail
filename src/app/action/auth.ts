@@ -6,60 +6,57 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 
 export const signup = async (email: string, password: string) => {
-
-    // validate
-
+  try {
+    // Validate inputs
     const isValid = await signInSchema.safeParseAsync({ email, password });
-
     if (!isValid.success) {
-        return {
-            error: true,
-            message: isValid.error.message,
-        };
+      return {
+        error: true,
+        message: isValid.error.message,
+      };
     }
 
-    //  check user exists
+    // Check if user already exists
     const existingUser = await db.user.findUnique({
-        where: {
-            email: isValid.data.email
-        }
-    })
+      where: {
+        email: isValid.data.email,
+      },
+    });
 
     if (existingUser) {
-        return {
-            message: "User already exists",
-        };
+      return {
+        message: "User already exists",
+      };
     }
 
-
-    // hash the  password & encrypt
+    // Hash the password
     const hashedPassword = await bcrypt.hash(isValid.data.password, 10);
 
-    // create user 
+    // Create new user in the database
     const newUser = await db.user.create({
-        data: {
-            email: isValid.data.email,
-            password: isValid.data.password
-        }
-    })
+      data: {
+        email: isValid.data.email,
+        password: hashedPassword, // Store hashed password
+      },
+    });
 
+    // If user creation is successful, handle redirection
     if (newUser) {
-        return {
-            ok: true,
-            message: "User created successfully",
-        };
+      // You can optionally create a Stripe user here
+
+      // Redirect to the signin page
+      redirect("/signin");
+    } else {
+      return {
+        error: true,
+        message: "Error creating user.",
+      };
     }
-
-
-
-    // create a stripe user
-
-    // redirect to sign in
-    redirect("/signin")
-
-}
-// see if user exists
-// if not, create user
-// encrypt password
-// redirect to sign in
-// create a stripe user
+  } catch (error) {
+    console.error("Error during signup:", error);
+    return {
+      error: true,
+      message: "An unexpected error occurred.",
+    };
+  }
+};
