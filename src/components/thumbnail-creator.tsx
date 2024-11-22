@@ -7,34 +7,45 @@ import { set } from "zod";
 import { removeBackground } from "@imgly/background-removal"
 import { Button } from "./ui/button";
 import { ArrowLeft } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
+import { inter, domine } from "../app/font";
 
-
-const presets ={
-    style1:{
+const presets = {
+    style1: {
         fontSize: 100,
         fontWeight: "bold",
-        color : "rgba(255, 255, 255,1)",
+        color: "rgba(255, 255, 255,1)",
         opacity: 1
 
     },
-    style2:{
+    style2: {
         fontSize: 100,
-        fontWeight: "bold", 
-        color : "rgba(0, 0, 0,1)",
+        fontWeight: "bold",
+        color: "rgba(0, 0, 0,1)",
         opacity: 1
     },
-    style3:{
+    style3: {
         fontSize: 100,
-        fontWeight: "bold", 
-        color : "rgba(255, 255, 255, 0.8)",
+        fontWeight: "bold",
+        color: "rgba(255, 255, 255, 0.8)",
         opacity: 0.8
     }
 
 }
 
+interface CloudinarySignature {
+    signature: string;
+    timestamp: number;
+    folder: string;
+    cloud_name: string;
+    api_key: string;
+  }
 
-const ThumbnailCreator = () => {
+const ThumbnailCreator = ({children} : {children: React.ReactNode}) => {
 
     const [selectStyle, setSelectStyle] = useState("style1");
     const [loading, setLoading] = useState(false);
@@ -45,6 +56,8 @@ const ThumbnailCreator = () => {
 
 
     const [text, setText] = useState("Pov");
+    const [font, setFont] = useState("arial");
+
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -95,7 +108,7 @@ const ThumbnailCreator = () => {
 
             let preset = presets.style1;
             switch (selectStyle) {
-               
+
                 case "style2":
                     preset = presets.style2;
                     break;
@@ -113,12 +126,29 @@ const ThumbnailCreator = () => {
 
 
             let fontSize = 100;
-            let selectFont = "Arial";
+            let selectFont = "arial";
+
+            switch (font) {
+
+                case "Times New Roman":
+                    selectFont = "Times New Roman";
+                    break;
+                case "inter":
+                    selectFont = inter.style.fontFamily;
+                    break;
+                case "Verdana":
+                    selectFont = "Verdana";
+                    break;
+                case "domine":
+                    selectFont = domine.style.fontFamily;
+                    break;
+            }
+
             ctx.font = `${preset.fontWeight} ${fontSize}px ${selectFont}`;
 
             const textWidth = ctx.measureText(text).width;
             const targetWidth = canvas.width * 0.9;
-            fontSize *= targetWidth / textWidth ;
+            fontSize *= targetWidth / textWidth;
 
             ctx.font = `${"bold"} ${fontSize}px ${selectFont}`;
 
@@ -150,7 +180,58 @@ const ThumbnailCreator = () => {
             link.download = "thumbnail.png";
             link.href = canvasRef.current.toDataURL();
             link.click();
-        }
+
+
+            canvasRef.current.toBlob(async (blob) => {
+                if (blob) {
+                  try {
+                    // Step 1: Fetch Cloudinary signature from API
+                    const response = await fetch("/api/getUploadSignature", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        folder: "user_images", // Optional folder name
+                      }),
+                    });
+          
+                    if (!response.ok) throw new Error("Failed to get upload signature");
+          
+                    const data: CloudinarySignature = await response.json();
+          
+                    // Step 2: Prepare FormData
+                    const formData = new FormData();
+                    formData.append("file", blob);
+                    formData.append("api_key", data.api_key);
+                    formData.append("timestamp", data.timestamp.toString());
+                    formData.append("signature", data.signature);
+                    formData.append("folder", data.folder);
+          
+                    // Step 3: Upload to Cloudinary
+                    const uploadResponse = await fetch(
+                      `https://api.cloudinary.com/v1_1/${data.cloud_name}/image/upload`,
+                      {
+                        method: "POST",
+                        body: formData,
+                      }
+                    );
+          
+                    if (uploadResponse.ok) {
+                      const result = await uploadResponse.json();
+                      console.log("Uploaded successfully to:", result.secure_url);
+                    } else {
+                      console.error("Failed to upload to Cloudinary");
+                    }
+                  } catch (error) {
+                    console.error("Error uploading file", error);
+                  }
+                }
+              }, "image/png");
+            }
+        
+
+        
     }
 
 
@@ -164,25 +245,74 @@ const ThumbnailCreator = () => {
                         {loading ? <div className="flex items-center justify-center">
                             <div className="h-10 w-10 animate-spin rounded-lg border-2 border-gray-800 border-dashed"></div></div> :
                             (
-                                <div className="my-4 flex flex-col items-center w-full gap-3">
-                                    
-                                    <button
-                                    onClick={() => {
-                                        setImageSrc(null)
-                                        setCanvasReady(false)
-                                        setProcessedImage(null)
-                                    }
+                                <div className="flex w-full max-w-2xl flex-col items-center gap-5">
+                                    <div className="my-4 flex flex-col items-center w-full gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setImageSrc(null)
+                                                setCanvasReady(false)
+                                                setProcessedImage(null)
+                                            }}
+                                            className="flex gap-2 items-center self-start"
+                                        >
+                                            <ArrowLeft className="h-4 w-4" />
+                                            <p className="leading-7">Go back</p>
+                                        </button >
+                                        <canvas ref={canvasRef} className="max-h-lg w-full h-auto max-w-lg rounded-lg">
+                                        </canvas>
+                                    </div>
+
+                                    <Card className="w-full">
+                                        <CardHeader >
+                                            <CardTitle>Edit your thumbnail</CardTitle>
+
+                                        </CardHeader>
+                                        <CardContent>
+
+                                            <div className="grid w-full items-center gap-4">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <Label htmlFor="inputid">text</Label>
+                                                    <Input
+                                                        value={text}
+                                                        onChange={(e) => setText(e.target.value)}
+                                                        id="inputid"
+                                                        placeholder="Type your text here"
+                                                    />
+
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <Label htmlFor="font">text</Label>
+                                                    <Select
+                                                        value={font}
+                                                        onValueChange={(value) => setFont(value)}
+
+                                                    >
+                                                        <SelectTrigger id="font">
+                                                            <SelectValue placeholder="Select a font" />
+                                                        </SelectTrigger>
+                                                        <SelectContent position="popper">
+                                                            <SelectItem value="arial">Arial</SelectItem>
+                                                            <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                                                            <SelectItem value="inter">Inter</SelectItem>
+                                                            <SelectItem value="Verdana">Verdana</SelectItem>
+                                                            <SelectItem value="domine">Domine</SelectItem>
+                                                        </SelectContent>
+
+                                                    </Select>
+
+                                                </div>
 
 
-                                    }
-                                    className="flex gap-2 items-center self-start">
-                                        <ArrowLeft className="h-4 w-4"/>
-                                        <p className="leading-7">Go back</p>
-                                    </button>
-                                <canvas ref={canvasRef} className="max-h-lg h-auto max-w-lg rounded-lg">
+                                            </div>
 
-                                </canvas>
-                                <Button onClick={()=>handleDownload()}>Download</Button>
+                                        </CardContent>
+                                        <CardFooter className="flex flex-wrap justify-between gap-2">
+                                            <Button onClick={() => handleDownload()}>Download</Button>
+                                            <Button onClick={drawCompositeImage}>Update</Button>
+
+                                        </CardFooter>
+                                    </Card>
+
                                 </div>
                             )}
                     </>
@@ -203,13 +333,17 @@ const ThumbnailCreator = () => {
 
                         </div>
                         <Dropzone setSelectedImage={setSelectedImage} />
+                        <div className="mt-8">
+                           {children}
+
+                        </div>
                     </div>
                 )}
 
 
         </>
     )
-};
+}
 
 
 

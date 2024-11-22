@@ -2,6 +2,7 @@
 
 import { getServerSession } from "next-auth";
 import Link from "next/link";
+import Recent from "~/components/rencent";
 import Style from "~/components/style";
 import ThumbnailCreator from "~/components/thumbnail-creator";
 import { Button } from "~/components/ui/button";
@@ -21,7 +22,7 @@ const page = async () => {
     })
 
     return (
-        <div className="flex items-center justify-center  max-w-full px-4 md:max-w-3xl md:px-0">
+        <div className="flex items-center justify-center  max-w-full px-4 md:max-w-3xl md:px-0  ">
             <div className="flex max-w-full flex-col gap-10">
                 {user?.credits === 0 ? (
                     <div className="flex flex-col px-10 md:mt-10">
@@ -38,13 +39,13 @@ const page = async () => {
                             </Link>
                         </div>
                         <div className="mt-8 ">
-                            Show recent thumbnails here
+                           <Recent />
 
                         </div>
                     </div>
                 ) : (
                    
-                        <ThumbnailCreator />
+                        <ThumbnailCreator > <Recent /> </ThumbnailCreator>
                 )}
 
             </div>
