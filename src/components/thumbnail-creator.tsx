@@ -307,7 +307,7 @@ const ThumbnailCreator = ({children} : {children: React.ReactNode}) => {
 
                                         </CardContent>
                                         <CardFooter className="flex flex-wrap justify-between gap-2">
-                                            <Button onClick={() => handleDownload()}>Download</Button>
+                                            <Button onClick={() => handleDownload()} className="bg-pink-600">Download</Button>
                                             <Button onClick={drawCompositeImage}>Update</Button>
 
                                         </CardFooter>
