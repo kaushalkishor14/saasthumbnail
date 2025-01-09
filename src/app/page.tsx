@@ -34,13 +34,13 @@ export default function HomePage() {
           Here are some of our thumbnail demos:
         </span>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
             <img
               key={index}
               src={`/thumbnail(${index + 1}).png`}
               alt={`Thumbnail ${index + 1}`}
-              className="w-full h-auto rounded-lg shadow-md hover:scale-105 transition-transform duration-300"
+              className="w-[400px] h-auto rounded-lg shadow-md hover:scale-105 transition-transform duration-300"
             />
           ))}
         </div>
